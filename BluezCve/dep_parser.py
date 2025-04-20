@@ -1,6 +1,5 @@
 import re
 import subprocess
-
 import os
 
 
@@ -15,7 +14,7 @@ def parse_requirements(path="requirements.txt"):
         try:
             lines = subprocess.check_output(["pip", "freeze"], text=True).splitlines()
         except subprocess.CalledProcessError:
-            print("[red]Failled to running pip freeze[/red]")
+            print("[red]Failed to run pip freeze[/red]")
             return []
 
     for line in lines:

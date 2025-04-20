@@ -33,7 +33,6 @@ def display_results(package, version, cves):
         score = cve.get("score", "N/A")
         link = cve.get("link", "#")
 
-        # Tetap warnai level severity saja
         severity_styled = (
             f"[{severity_color(severity)}]{severity}[/]"
             if severity != "UNKNOWN"
@@ -57,9 +56,6 @@ def display_results(package, version, cves):
         console.print(panel)
 
 
-from collections import Counter
-
-
 def display_statistics(all_cves):
     severities = [cve.get("severity", "UNKNOWN").upper() for cve in all_cves]
     count = Counter(severities)
@@ -78,37 +74,6 @@ def display_statistics(all_cves):
         if count[level]:
             icon = emoji.get(level, "")
             print(f"- {icon} {level.title()}: {count[level]}")
-
-
-def main():
-    results = []
-    all_cves = []
-
-    dependencies = parse_requirements()
-
-    for pkg, ver in dependencies:
-        cves = analyze_package(pkg, ver)
-        results.append(
-            {
-                "package": pkg,
-                "version": ver,
-                "cves": cves,
-            }
-        )
-        display_results(pkg, ver, cves)
-        all_cves.extend(cves)
-
-    export_to_json(results)
-    export_to_markdown(results)
-
-    if all_cves:
-        display_statistics(all_cves)
-    else:
-        print("\n[bold blue][✔] CVE bot found![/bold blue]")
-
-
-if __name__ == "__main__":
-    main()
 
 
 def export_to_json(results, filename="vuln_report.json"):

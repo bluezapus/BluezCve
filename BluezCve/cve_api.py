@@ -21,4 +21,3 @@ def query_cve(package, version, delay=1):
     except Exception as e:
         print(f"[!] Error querying {package}: {e}")
         return None
-

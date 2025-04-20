@@ -1,3 +1,6 @@
+from .utils import get_severity_from_score
+
+
 def extract_cve_info(cve_data):
     cve_items = []
     for item in cve_data.get("vulnerabilities", []):
@@ -10,13 +13,10 @@ def extract_cve_info(cve_data):
         score = "N/A"
         severity = "UNKNOWN"
 
-        # Cek beberapa versi metric yang mungkin ada
         for key in ["cvssMetricV31", "cvssMetricV30", "cvssMetricV2"]:
             if key in metrics:
                 score = metrics[key][0].get("cvssData", {}).get("baseScore", "N/A")
-                severity = (
-                    metrics[key][0].get("cvssData", {}).get("baseSeverity", "UNKNOWN")
-                )
+                severity = get_severity_from_score(score)
                 break
 
         link = f"https://nvd.nist.gov/vuln/detail/{cve_id}"
@@ -31,4 +31,3 @@ def extract_cve_info(cve_data):
         )
 
     return cve_items
-
