@@ -43,10 +43,12 @@ pip install -r requirements.txt
 ```
 ### or
 
+#### After Install all dependencies requirements.txt and activate Venv
+
 ```bash
     python3 -m BluezCve
 ```
-#### After Install all dependencies requirements.txt and activate Venv
+
 
 
 ![Image](images/Screenshot1.png)
