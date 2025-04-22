@@ -6,10 +6,10 @@
 
 ## Feature
 - Detects vulnerabilities from a `file.txt` or directly from the active environment via `pip freeze`
-- Connects to the CVE database through an API (e.g., NVD)
+- Connects to the CVE database through an API (NVD)
 - Displays vulnerability statistics based on severity levels
 - Clean and informative terminal output using `rich`
-
+- Json and .md output results
 
 ---
 
