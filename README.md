@@ -13,7 +13,7 @@
 
 ---
 
-## Instalasi
+## Instalation
 
 ```bash
     git clone https://github.com/bluezapus/BluezCve.git
@@ -25,7 +25,7 @@
     ./install.sh
 ```
 
-## Manual instalasi
+## Manual instalation
 ```bash
     https://github.com/bluezapus/BluezCve.git
 cd BluezCve
