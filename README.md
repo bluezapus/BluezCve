@@ -9,7 +9,7 @@
 - Connects to the CVE database through an API (NVD)
 - Displays vulnerability statistics based on severity levels
 - Clean and informative terminal output using `rich`
-- Json and .md output results
+- JSON and Markdown output results
 
 ---
 
