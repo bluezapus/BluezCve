@@ -34,6 +34,21 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 ## 
+#### Usage
+```bash
+    chmod +x ./BluezCve.sh
+```
+```bash
+    ./BluezCve.sh
+```
+### or
+
+```bash
+    python3 -m BluezCve
+```
+#### After Install all dependencies requirements.txt and activate Venv
+
+
 ![Image](images/Screenshot1.png)
 
 
