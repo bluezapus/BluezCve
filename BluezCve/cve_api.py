@@ -16,7 +16,7 @@ def query_cve(package, version, delay=1):
     try:
         response = requests.get(NVD_BASE, params=params, headers=headers)
         response.raise_for_status()
-        time.sleep(delay)  # Hindari rate limit
+        time.sleep(delay)
         return response.json()
     except Exception as e:
         print(f"[!] Error querying {package}: {e}")
