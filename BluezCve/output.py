@@ -43,7 +43,7 @@ def display_results(package, version, cves):
             f"[blue][bold]Level:[/] {severity_styled}\n"
             f"[bold]Score:[/] {score}\n"
             f"[italic]{desc}[/]\n"
-            f"🔗 {link}[/blue]"
+            f"{link}[/blue]"
         )
 
         title_text = Text(f"[!] {cve_id}", style="bold blue")
