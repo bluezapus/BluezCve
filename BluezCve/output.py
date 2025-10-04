@@ -76,13 +76,13 @@ def display_statistics(all_cves):
             print(f"- {icon} {level.title()}: {count[level]}")
 
 
-def export_to_json(results, filename="vuln_report.json"):
+def export_to_json(results, filename="bluezcve_report.json"):
     with open(filename, "w") as f:
         json.dump(results, f, indent=2)
     print(f"[bold blue][✔] JSON report saved to {filename}[/bold blue]")
 
 
-def export_to_markdown(results, filename="vuln_report.md"):
+def export_to_markdown(results, filename="bluezcve_report.md"):
     with open(filename, "w") as f:
         f.write("# Vulnerability Report\n\n")
         for entry in results:

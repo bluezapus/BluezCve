@@ -12,12 +12,10 @@ from rich.console import Console
 
 console = Console()
 
-
 def show_banner():
     f = Figlet(font="slant")
     ascii_banner = f.renderText("BluezCve")
     console.print(f"[bold magenta]{ascii_banner}[/bold magenta]")
-
 
 def run_scan(deps):
     all_results = []
@@ -34,8 +32,7 @@ def run_scan(deps):
         all_cves = [cve for pkg in all_results for cve in pkg["cves"]]
         display_statistics(all_cves)
     else:
-        console.print("\n[bold green]✔ Tidak ada CVE ditemukan![/bold green]")
-
+        console.print("\n[bold green]✔ No CVEs were found![/bold green]")
 
 def main():
     show_banner()
