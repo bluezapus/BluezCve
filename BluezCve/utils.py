@@ -1,3 +1,7 @@
+import re
+from packaging.version import Version
+
+
 def get_severity_from_score(score):
     try:
         score = float(score)
@@ -14,3 +18,17 @@ def get_severity_from_score(score):
         return "HIGH"
     else:
         return "CRITICAL"
+
+
+def normalize_kernel(version):
+
+    if not version:
+        return None
+
+    parts = version.split("-")[0]
+    nums = parts.split(".")
+
+    if len(nums) >= 3:
+        return ".".join(nums[:3])
+
+    return parts

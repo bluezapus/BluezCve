@@ -1,125 +1,154 @@
-import requests
-import time
 import os
+import time
+import requests
 from dotenv import load_dotenv
 
+from .cache import init_cache, get_cache, set_cache
+from .threat_intel import get_epss, is_known_exploited
+
+# =========================
+# ENV & CONFIG
+# =========================
 load_dotenv()
-API_KEY = os.getenv("0da7574d-b35a-400c-aa5a-e1e1f29490c9")
 
-NVD_BASE = "https://services.nvd.nist.gov/rest/json/cves/2.0"
+NVD_CVE_API = "https://services.nvd.nist.gov/rest/json/cves/2.0"
+NVD_CPE_API = "https://services.nvd.nist.gov/rest/json/cpes/2.0"
 
-def _safe_get_json(resp):
+DEFAULT_DELAY = 1
+RATE_LIMIT_SLEEP = 30
+
+
+# =========================
+# CORE REQUEST HANDLER
+# =========================
+def _request(url, params):
+    api_key = os.getenv("NVD_API_KEY")
+    headers = {"apiKey": api_key} if api_key else {}
+
     try:
-        return resp.json()
-    except ValueError:
-        return {}
+        resp = requests.get(
+            url,
+            params=params,
+            headers=headers,
+            timeout=30,
+        )
 
-def _merge_vulnerabilities(list_of_lists):
-    merged = {}
-    for lst in list_of_lists:
-        for item in lst:
-            cve = item.get("cve", {})
+        if resp.status_code == 429:
+            time.sleep(RATE_LIMIT_SLEEP)
+            return _request(url, params)
+
+        resp.raise_for_status()
+        time.sleep(DEFAULT_DELAY)
+        return resp.json()
+
+    except requests.RequestException as e:
+        return {"error": str(e)}
+
+
+# =========================
+# CPE RESOLUTION (PRIMARY)
+# =========================
+def resolve_cpe(package: str, version: str, limit=20):
+    data = _request(
+        NVD_CPE_API,
+        {
+            "keywordSearch": package,
+            "resultsPerPage": limit,
+        },
+    )
+
+    cpes = []
+
+    for item in data.get("products", []):
+        cpe = item.get("cpe", {})
+        cpe_name = cpe.get("cpeName")
+        if not cpe_name:
+            continue
+
+        if version and version not in cpe_name:
+            continue
+
+        cpes.append(cpe_name)
+
+    return list(set(cpes))
+
+
+# =========================
+# CVE QUERIES
+# =========================
+def query_cve_by_cpe(cpe_name: str):
+    data = _request(
+        NVD_CVE_API,
+        {
+            "cpeName": cpe_name,
+            "resultsPerPage": 200,
+        },
+    )
+    return data.get("vulnerabilities", [])
+
+
+def query_cve_keyword(package: str, version: str):
+    query = f"{package} {version}"
+    data = _request(
+        NVD_CVE_API,
+        {
+            "keywordSearch": query,
+            "resultsPerPage": 100,
+        },
+    )
+    return data.get("vulnerabilities", [])
+
+
+# =========================
+# PUBLIC ENTRY POINT
+# =========================
+def query_cve_package(package: str, version: str):
+    cache_key = f"{package}:{version}"
+    cached = get_cache(cache_key)
+    if cached:
+        return cached
+
+    vulnerabilities = {}
+    cpes = resolve_cpe(package, version)
+
+    # --- CPE-FIRST ---
+    for cpe in cpes:
+        for v in query_cve_by_cpe(cpe):
+            cve = v.get("cve", {})
             cve_id = cve.get("id")
             if not cve_id:
-                key = str(item)
-            else:
-                key = cve_id
-            if key not in merged:
-                merged[key] = item
-    return list(merged.values())
-
-def _perform_request(params, headers, delay, retries=2):
-    attempt = 0
-    while attempt <= retries:
-        try:
-            resp = requests.get(NVD_BASE, params=params, headers=headers, timeout=30)
-            if resp.status_code == 429:
-                wait = 30 + attempt * 10
-                print(f"[!] Rate limit from NVD (429). Sleeping {wait}s and retrying...")
-                time.sleep(wait)
-                attempt += 1
                 continue
-            resp.raise_for_status()
-            time.sleep(delay)
-            return _safe_get_json(resp)
-        except requests.exceptions.RequestException as e:
-            attempt += 1
-            if attempt > retries:
-                print(f"[!] Request failed for params={params}: {e}")
-                return {}
-            else:
-                backoff = 5 * attempt
-                print(f"[!] Request error, retrying in {backoff}s... ({e})")
-                time.sleep(backoff)
-    return {}
 
-def query_cve(package, version=None, delay=1):
-    """
-    Query NVD with smarter keyword combinations.
-    - Jika package bernama 'linux' atau 'kernel', buat beberapa variasi query
-      (mis. "linux 5.8", "linux kernel 5.8", "linux pipe", dll) untuk menangkap CVE kernel.
-    - Mengembalikan dict: {"vulnerabilities": [...]}
-    """
-    headers = {"apiKey": API_KEY} if API_KEY else {}
+            v["epss"] = get_epss(cve_id)
+            v["kev"] = is_known_exploited(cve_id)
+            vulnerabilities[cve_id] = v
 
-    queries = []
-    base_pkg = (package or "").strip().lower()
+    # --- FALLBACK ---
+    if not vulnerabilities:
+        for v in query_cve_keyword(package, version):
+            cve = v.get("cve", {})
+            cve_id = cve.get("id")
+            if not cve_id:
+                continue
 
-    if base_pkg in ("linux", "kernel"):
-        if version:
-            queries.extend(
-                [
-                    f"linux {version}",
-                    f"linux kernel {version}",
-                    f"kernel {version}",
-                ]
-            )
-        else:
-            queries.extend(
-                [
-                    "linux kernel",
-                ]
-            )
-    else:
+            v["epss"] = get_epss(cve_id)
+            v["kev"] = is_known_exploited(cve_id)
+            vulnerabilities[cve_id] = v
 
-        if version:
-            queries.extend(
-                [
-                    f"{package} {version}",
-                    f"{package} {version} vulnerability",
-                    f"{package} {version} cve",
-                    f"{package} {version} security",
-                ]
-            )
-        else:
-            queries.extend([f"{package}", f"{package} vulnerability", f"{package} cve"])
+    result = {
+        "vulnerabilities": list(vulnerabilities.values()),
+        "meta": {
+            "package": package,
+            "version": version,
+            "cpe_count": len(cpes),
+            "mode": "CPE" if cpes else "KEYWORD",
+            "api_used": bool(os.getenv("NVD_API_KEY")),
+        },
+    }
 
-    seen = set()
-    uniq_queries = []
-    for q in queries:
-        if q not in seen:
-            uniq_queries.append(q)
-            seen.add(q)
-
-    all_vulns_lists = []
-    for q in uniq_queries:
-        params = {"keywordSearch": q, "resultsPerPage": 50}
-        data = _perform_request(params, headers, delay)
-        if not data:
-            continue
-        vulns = data.get("vulnerabilities", [])
-        if vulns:
-            print(f"[i] Found {len(vulns)} results for query: '{q}'")
-            all_vulns_lists.append(vulns)
-        else:
-            pass
-
-    merged = _merge_vulnerabilities(all_vulns_lists)
-    return {"vulnerabilities": merged}
+    set_cache(cache_key, result)
+    return result
 
 
-def query_cve_by_id(cve_id, delay=1):
-    headers = {"apiKey": API_KEY} if API_KEY else {}
-    params = {"cveId": cve_id}
-    data = _perform_request(params, headers, delay)
-    return data
+# init cache once
+init_cache()
