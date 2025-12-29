@@ -1,13 +1,6 @@
 import urllib.parse
 
 def generate_windows_kernel_links(windows_version):
-    """
-    windows_version examples:
-      10
-      10.0
-      10.0.19045
-      11
-    """
 
     base_queries = [
         f"windows kernel privilege escalation",

@@ -1,12 +1,6 @@
 import urllib.parse
 
 def generate_macos_kernel_links(darwin_version):
-    """
-    darwin_version examples:
-      21.6.0 (macOS Monterey)
-      22.6.0 (Ventura)
-      23.x.x (Sonoma)
-    """
 
     base_queries = [
         "macos xnu kernel privilege escalation",

@@ -3,15 +3,9 @@ import subprocess
 
 
 def parse_requirements(path):
-    """
-    Parse dependencies from:
-    - requirements file (if path is provided)
-    - active environment via pip freeze (if path is None)
-    """
-
     deps = []
 
-    # MODE 1: requirements file
+    # file.txt
     if path is not None:
         if not os.path.exists(path):
             raise FileNotFoundError(f"Requirements file not found: {path}")
@@ -19,7 +13,7 @@ def parse_requirements(path):
         with open(path, "r") as f:
             lines = f.readlines()
 
-    # MODE 2: pip freeze
+    # freeze
     else:
         try:
             result = subprocess.run(

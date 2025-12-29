@@ -23,11 +23,9 @@ def extract_cve_info(cve_data):
                 severity = get_severity_from_score(score)
                 break
 
-        # === THREAT ENRICHMENT ===
         epss = item.get("epss", 0.0)
         kev = item.get("kev", False)
 
-        # === SOC PRIORITY LOGIC ===
         priority = "LOW"
         if kev:
             priority = "CRITICAL"

@@ -19,18 +19,12 @@ from rich.console import Console
 
 console = Console()
 
-
-# ======================================================
-# UI
-# ======================================================
+# banner
 def show_banner():
     f = Figlet(font="graffiti")
     console.print(f"[bold magenta]{f.renderText('BluezCve')}[/bold magenta]")
 
-
-# ======================================================
-# CORE PACKAGE SCAN
-# ======================================================
+# scan package
 def run_package_scan(deps, quiet=False):
     results = []
 
@@ -55,10 +49,8 @@ def run_package_scan(deps, quiet=False):
 
     return results
 
+# detection kernel
 
-# ======================================================
-# KERNEL VERSION DETECTION
-# ======================================================
 def detect_kernel_release():
     try:
         return platform.release()
@@ -68,10 +60,6 @@ def detect_kernel_release():
         except Exception:
             return None
 
-
-# ======================================================
-# MAIN
-# ======================================================
 def main():
     parser = argparse.ArgumentParser(
         prog="BluezCve",
@@ -83,7 +71,7 @@ def main():
         formatter_class=argparse.RawTextHelpFormatter,
     )
 
-    # ================= PACKAGE =================
+    # package
     parser.add_argument(
         "-p", "--package",
         metavar="NAME",
@@ -105,7 +93,7 @@ def main():
         help="Scan CVEs from current Python environment (pip freeze)"
     )
 
-    # ================= API =====================
+    # api
     parser.add_argument(
         "--api",
         metavar="API_KEY",
@@ -117,7 +105,7 @@ def main():
         )
     )
 
-    # ================= OUTPUT ==================
+    # output
     parser.add_argument(
         "--json",
         action="store_true",
@@ -145,7 +133,7 @@ def main():
         help="Disable ASCII banner"
     )
 
-    # ================= KERNEL MODES ============
+    # kernel
     parser.add_argument(
         "--linux-kernel",
         action="store_true",
@@ -165,16 +153,13 @@ def main():
     args = parser.parse_args()
     quiet = args.quiet or args.json
 
-    # API override
+    # use api scann
     if args.api:
         os.environ["NVD_API_KEY"] = args.api
 
     if not args.no_banner and not quiet:
         show_banner()
-
-    # ==================================================
-    # LINUX KERNEL MODE
-    # ==================================================
+    # linux
     if args.linux_kernel:
         from .linux_kernel_check import generate_kernel_check_links
 
@@ -188,9 +173,7 @@ def main():
             console.print(f"[bold cyan]{e['query']}[/bold cyan]\n  {e['url']}\n")
         sys.exit(0)
 
-    # ==================================================
-    # WINDOWS KERNEL MODE
-    # ==================================================
+    # windows
     if args.win_kernel:
         if not args.version:
             console.print("[bold red]✘ --win-kernel requires -v[/bold red]")
@@ -207,9 +190,7 @@ def main():
             )
         sys.exit(0)
 
-    # ==================================================
-    # macOS KERNEL MODE
-    # ==================================================
+    # macos
     if args.mac_kernel:
         from .macos_kernel_check import generate_macos_kernel_links
 
@@ -227,9 +208,7 @@ def main():
             )
         sys.exit(0)
 
-    # ==================================================
-    # PACKAGE MODE
-    # ==================================================
+    #package
     if args.package and args.version:
         results = run_package_scan([(args.package, args.version)], quiet)
     elif args.requirements:

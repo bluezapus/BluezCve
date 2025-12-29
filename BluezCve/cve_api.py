@@ -6,9 +6,6 @@ from dotenv import load_dotenv
 from .cache import init_cache, get_cache, set_cache
 from .threat_intel import get_epss, is_known_exploited
 
-# =========================
-# ENV & CONFIG
-# =========================
 load_dotenv()
 
 NVD_CVE_API = "https://services.nvd.nist.gov/rest/json/cves/2.0"
@@ -17,10 +14,6 @@ NVD_CPE_API = "https://services.nvd.nist.gov/rest/json/cpes/2.0"
 DEFAULT_DELAY = 1
 RATE_LIMIT_SLEEP = 30
 
-
-# =========================
-# CORE REQUEST HANDLER
-# =========================
 def _request(url, params):
     api_key = os.getenv("NVD_API_KEY")
     headers = {"apiKey": api_key} if api_key else {}
@@ -45,9 +38,6 @@ def _request(url, params):
         return {"error": str(e)}
 
 
-# =========================
-# CPE RESOLUTION (PRIMARY)
-# =========================
 def resolve_cpe(package: str, version: str, limit=20):
     data = _request(
         NVD_CPE_API,
@@ -72,10 +62,6 @@ def resolve_cpe(package: str, version: str, limit=20):
 
     return list(set(cpes))
 
-
-# =========================
-# CVE QUERIES
-# =========================
 def query_cve_by_cpe(cpe_name: str):
     data = _request(
         NVD_CVE_API,
@@ -98,10 +84,6 @@ def query_cve_keyword(package: str, version: str):
     )
     return data.get("vulnerabilities", [])
 
-
-# =========================
-# PUBLIC ENTRY POINT
-# =========================
 def query_cve_package(package: str, version: str):
     cache_key = f"{package}:{version}"
     cached = get_cache(cache_key)
@@ -111,7 +93,6 @@ def query_cve_package(package: str, version: str):
     vulnerabilities = {}
     cpes = resolve_cpe(package, version)
 
-    # --- CPE-FIRST ---
     for cpe in cpes:
         for v in query_cve_by_cpe(cpe):
             cve = v.get("cve", {})
@@ -123,7 +104,6 @@ def query_cve_package(package: str, version: str):
             v["kev"] = is_known_exploited(cve_id)
             vulnerabilities[cve_id] = v
 
-    # --- FALLBACK ---
     if not vulnerabilities:
         for v in query_cve_keyword(package, version):
             cve = v.get("cve", {})
@@ -149,6 +129,4 @@ def query_cve_package(package: str, version: str):
     set_cache(cache_key, result)
     return result
 
-
-# init cache once
 init_cache()
